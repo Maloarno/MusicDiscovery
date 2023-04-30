@@ -1,7 +1,5 @@
 import spotipy
-import sys
 import pandas as pd
-import json
 from spotipy.oauth2 import SpotifyClientCredentials
 
 cid='651c908112b04c008f843b0fa3475186'
@@ -60,27 +58,64 @@ spotify = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(cl
 #    z=spotify.audio_features(track_uri)[0]
 
 
-artist_name = []
-track_name = []
-popularity = []
-track_id = []
-danceability = []
-energy = []
-duration_ms = []
-track_number = []
-available_markets =[]
-for i in range(0,100):
-    track_results = spotify.search(q='year:2023', type='track', limit=50,offset=i)
-    for i, t in enumerate(track_results['tracks']['items']):
-        artist_name.append(t['artists'][0]['name'])
-        track_name.append(t['name'])
-        track_id.append(t['id'])
-        popularity.append(t['popularity'])
-        duration_ms.append(t['duration_ms'])
-        track_number.append(t['track_number'])
-        available_markets.append(t['available_markets'])
+#artist_name = []
+#track_name = []
+#popularity = []
+#track_id = []
+#danceability = []
+#energy = []
+#duration_ms = []
+#track_number = []
+#available_markets =[]
+#for i in range(0,100):
+#    track_results = spotify.search(q='year:2023', type='track', limit=50,offset=i)
+#    for i, t in enumerate(track_results['tracks']['items']):
+#        artist_name.append(t['artists'][0]['name'])
+#        track_name.append(t['name'])
+#        track_id.append(t['id'])
+#        popularity.append(t['popularity'])
+#        duration_ms.append(t['duration_ms'])
+#        track_number.append(t['track_number'])
+#        available_markets.append(t['available_markets'])
+#
+#
+#track_dataframe = pd.DataFrame({'artist_name' : artist_name, 'track_name' : track_name, 'track_id' : track_id, 'popularity' : popularity, 'duration_ms' : duration_ms, 'track_number' : track_number, 'available_markets' : available_markets})
+#print(track_dataframe)
+#
+#track_dataframe.to_csv(r'\\wsl$\Ubuntu\home\mattnew\airflow\dags\data.csv', index=None)
+
+results = spotify.search(q='year:2022', type='track', limit=50)
+tracks = results['tracks']['items']
+
+data = []
+for i in range(0, 500, 50):
+    track_results = spotify.search(q='year:2018', type='track', limit=50, offset=i)
+    for j, t in enumerate(track_results['tracks']['items']):
+        item = {}
+        item['rank'] = i+j+1
+        item['artist'] = t['artists'][0]['name']
+        item['album'] = t['album']['name']
+        item['track'] = t['name']
+        item['danceability'] = spotify.audio_features(t['id'])[0]['danceability']
+        item['loudness'] = spotify.audio_features(t['id'])[0]['loudness']
+        item['popularity'] = t['popularity']
+        item['available_markets'] = len(t['available_markets'])
+        item['duration_ms'] = t['duration_ms']
+        item['energy'] = spotify.audio_features(t['id'])[0]['energy']
+        item['key'] = spotify.audio_features(t['id'])[0]['key']
+        item['mode'] = spotify.audio_features(t['id'])[0]['mode']
+        item['speechiness'] = spotify.audio_features(t['id'])[0]['speechiness']
+        item['acousticness'] = spotify.audio_features(t['id'])[0]['acousticness']
+        item['instrumentalness'] = spotify.audio_features(t['id'])[0]['instrumentalness']
+        item['liveness'] = spotify.audio_features(t['id'])[0]['liveness']
+        item['valence'] = spotify.audio_features(t['id'])[0]['valence']
+        item['platform'] = 'Spotify'
+        data.append(item)
+
+df = pd.DataFrame(data)
+
+#df.to_parquet('df.parquet.gzip',compression='gzip')  
+# pd.read_parquet('df.parquet.gzip') 
 
 
-track_dataframe = pd.DataFrame({'artist_name' : artist_name, 'track_name' : track_name, 'track_id' : track_id, 'popularity' : popularity, 'duration_ms' : duration_ms, 'track_number' : track_number, 'available_markets' : available_markets})
-print(track_dataframe)
-
+print(df)
