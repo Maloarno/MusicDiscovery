@@ -1,16 +1,18 @@
 import requests
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 # Set the API endpoint URL and parameters
-url = 'https://api.deezer.com/search'
-params = {
+api_url = 'https://api.deezer.com/search'
+api_params = {
     'q': 'year:2018',
     'type': 'track',
     'limit': 50,
 }
 
 # Set the headers to include your API key
-headers = {
+api_headers = {
     'x-rapidapi-host': 'https://developers.deezer.com/myapps/app/601084',
     'x-rapidapi-key': '3e678ee2516677d0c092634065eef4f3',
 }
@@ -18,8 +20,8 @@ headers = {
 # Make the API requests and collect data in a list of dictionaries
 data = []
 for i in range(0, 500, 50):
-    params['index'] = i
-    response = requests.get(url, headers=headers, params=params)
+    api_params['index'] = i
+    response = requests.get(api_url, headers=api_headers, params=api_params)
     if response.status_code == 200:
         for j, t in enumerate(response.json()['data']):
             item = {}
@@ -27,32 +29,20 @@ for i in range(0, 500, 50):
             item['artist'] = t['artist']['name']
             item['album'] = t['album']['title']
             item['track'] = t['title']
-          #  item['danceability'] = t['danceability']
-           # item['loudness'] = t['loudness']
             item['popularity'] = t['rank']
-           # item['available_markets'] = len(t['available_countries'].split(','))
             item['duration_ms'] = t['duration']*1000
-           # item['energy'] = t['energy']
-           # item['key'] = t['key']
-           # item['mode'] = t['mode']
-           # item['speechiness'] = t['speechiness']
-            #item['acousticness'] = t['acousticness']
-            #item['instrumentalness'] = t['instrumentalness']
-            #item['liveness'] = t['liveness']
-          #  item['valence'] = t['valence']
             data.append(item)
     else:
         print(f"Error: {response.status_code} - {response.text}")
 
 # Convert the list of dictionaries to a Pandas DataFrame
-df = pd.DataFrame(data)
-print(df)
+deezer_data = pd.DataFrame(data)
 
-# Save the DataFrame to a CSV file
-df.to_csv('top_500_tracks_deezer.csv', index=False)
+# Write dataframe to Parquet file
+pq.write_table(pa.Table.from_pandas(deezer_data), 'top_500_tracks_deezer.parquet')
 
-# Load the CSV file into a Pandas DataFrame
-df = pd.read_csv('top_500_tracks_deezer.csv')
+# Load dataframe from Parquet file
+deezer_data = pq.read_table('top_500_tracks_deezer.parquet').to_pandas()
 
-# Print the first few rows of the DataFrame
-print(df.head())
+# Save data to Parquet file
+pq.write_table(pa.Table.from_pandas(deezer_data), 'deezer_data.parquet')
